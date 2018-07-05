@@ -1,5 +1,0 @@
-This is a version of Android's "fastboot" for the Kindle 4, Kindle Touch and Kindle PaperWhite. It will NOT work with Android phones.
-
-To build the project on OS X, simply run
-
-    make
