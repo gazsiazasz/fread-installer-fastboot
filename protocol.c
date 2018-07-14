@@ -43,11 +43,11 @@ char *fb_get_error(void)
 static int check_response(usb_handle *usb, unsigned size, 
                           unsigned data_okay, char *response)
 {
-    unsigned char status[65];
+    unsigned char status[4096];
     int r;
 
     for(;;) {
-        r = usb_read(usb, status, 64);
+        r = usb_read(usb, status, 4095);
         if(r < 0) {
             sprintf(ERROR, "status read failed (%s)", strerror(errno));
             usb_close(usb);

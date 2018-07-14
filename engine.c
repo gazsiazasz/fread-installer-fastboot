@@ -241,7 +241,12 @@ static int cb_display(Action *a, int status, char *resp)
         fprintf(stderr, "%s FAILED (%s)\n", a->cmd, resp);
         return status;
     }
-    fprintf(stderr, "%s: %s\n", (char*) a->data, resp);
+    if(a->data) {
+        fprintf(stderr, "%s: %s\n", (char*) a->data, resp);
+    } else {
+        fprintf(stderr, "%s\n", resp);
+    }
+
     return 0;
 }
 
@@ -251,6 +256,14 @@ void fb_queue_display(const char *var, const char *prettyname)
     a = queue_action(OP_QUERY, "getvar:%s", var);
     a->data = strdup(prettyname);
     if (a->data == 0) die("out of memory");
+    a->func = cb_display;
+}
+
+void fb_queue_display_partlist()
+{
+    Action *a;
+    a = queue_action(OP_QUERY, "partlist");
+    a->data = NULL;
     a->func = cb_display;
 }
 

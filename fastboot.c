@@ -158,6 +158,7 @@ void usage(void)
             "  setvar <variable> <value>                sets an idme variable\n"
             "  download <filename>                      download data to memory for use with \n"
             "                                             future commands\n"
+            "  partlist                                 list partitions\n"
             "  verify <partition> [ <filename> ]        verify downloaded data. required if \n"
             "                                             bootloader is secure\n"
             "  flash <partition> [ <filename> ]         flash downloaded data\n"
@@ -368,6 +369,10 @@ int main(int argc, char **argv)
             data = load_file(fname, &sz);
             if (data == 0) die("cannot load '%s'\n", fname);
             fb_queue_download("data", data, sz);
+
+        } else if(!strcmp(*argv, "partlist")) {
+          fb_queue_display_partlist();
+	        skip(1);
         } else if(!strcmp(*argv, "verify")) {
             char *pname = argv[1];
             char *fname = 0;

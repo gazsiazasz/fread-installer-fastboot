@@ -38,7 +38,7 @@ int fb_download_data(usb_handle *usb, const void *data, unsigned size);
 char *fb_get_error(void);
 
 #define FB_COMMAND_SZ 64
-#define FB_RESPONSE_SZ 64
+#define FB_RESPONSE_SZ 4095
 
 /* engine.c - high level command queue engine */
 void fb_queue_flash(const char *ptn, unsigned sz);
@@ -46,6 +46,7 @@ void fb_queue_verify(const char *ptn, unsigned sz);
 void fb_queue_erase(const char *ptn);
 void fb_queue_require(const char *var, int invert, unsigned nvalues, const char **value);
 void fb_queue_display(const char *var, const char *prettyname);
+void fb_queue_display_partlist();
 void fb_queue_set(const char *var, const char *value, const char *prettyname);
 void fb_queue_reboot(void);
 void fb_queue_command(const char *cmd, const char *msg);
