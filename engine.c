@@ -238,13 +238,13 @@ void fb_queue_require(const char *var, int invert, unsigned nvalues, const char 
 static int cb_display(Action *a, int status, char *resp)
 {
     if (status) {
-        fprintf(stderr, "%s FAILED (%s)\n", a->cmd, resp);
+        fprintf(stderr, "\n%s FAILED (%s)\n", a->cmd, resp);
         return status;
     }
     if(a->data) {
-        fprintf(stderr, "%s: %s\n", (char*) a->data, resp);
+        fprintf(stderr, "\n%s: %s\n", (char*) a->data, resp);
     } else {
-        fprintf(stderr, "%s\n", resp);
+        fprintf(stderr, "\n%s\n", resp);
     }
 
     return 0;

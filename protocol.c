@@ -45,6 +45,8 @@ static int check_response(usb_handle *usb, unsigned size,
 {
     unsigned char status[4096];
     int r;
+    int is_disp = 0;
+    int progress = 0;
 
     for(;;) {
         r = usb_read(usb, status, 4095);
@@ -55,14 +57,30 @@ static int check_response(usb_handle *usb, unsigned size,
         }
         status[r] = 0;
 
+        if(is_disp) {
+          strcpy(response + progress, (char*) status);
+          progress += r;
+          if(r == 0 || status[r-1] == 0) {
+            return 0;
+          }
+          continue;
+        }
+
         if(r < 4) {
             sprintf(ERROR, "status malformed (%d bytes)", r);
             usb_close(usb);
             return -1;
         }
 
+        if(!memcmp(status, "DISP", 4)) {
+            strcpy(response, (char*) status + 4);
+            is_disp = 1;
+            progress = r - 4;
+            continue;
+        }
+
         if(!memcmp(status, "INFO", 4)) {
-            fprintf(stderr,"(bootloader) %s\n", status + 4);
+            fprintf(stderr,"%s\n", status + 4);
             continue;
         }
 
