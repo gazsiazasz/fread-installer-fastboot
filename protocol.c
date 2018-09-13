@@ -157,14 +157,14 @@ static int check_response(usb_handle *usb, long unsigned size,
 
             expected_size = strtoul((char*) status + 4, 0, 16);
 
-            if(write_to_file((void*) status+37, r-37, outfilefd)) {
+            if(write_to_file((void*) status+38, r-38, outfilefd)) {
               sprintf(ERROR, "Writing to file failed: %s\n", strerror(errno));
               close(outfilefd);
               usb_close(usb);
               return -1;
             }
-            expected_size -= r-37;
-            progress += r-37;
+            expected_size -= r-38;
+            progress += r-38;
             continue;
         }
 
