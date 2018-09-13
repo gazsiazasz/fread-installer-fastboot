@@ -60,6 +60,7 @@ char *mkmsg(const char *fmt, ...)
 #define OP_COMMAND    2
 #define OP_QUERY      3
 #define OP_NOTICE     4
+#define OP_UPLOAD     5
 
 typedef struct Action Action;
 
@@ -160,11 +161,11 @@ static int match(char *str, const char **value, unsigned count)
     const char *val;
     unsigned n;
     int len;
+    int match;
 
     for (n = 0; n < count; n++) {
-        const char *val = value[n];
-        int len = strlen(val);
-        int match;
+        val = value[n];
+        len = strlen(val);
 
         if ((len > 1) && (val[len-1] == '*')) {
             len--;
@@ -250,6 +251,7 @@ static int cb_display(Action *a, int status, char *resp)
     return 0;
 }
 
+
 void fb_queue_display(const char *var, const char *prettyname)
 {
     Action *a;
@@ -265,6 +267,15 @@ void fb_queue_display_partlist()
     a = queue_action(OP_QUERY, "partlist");
     a->data = NULL;
     a->func = cb_display;
+}
+
+
+void fb_queue_upload(char* filename)
+{
+    Action *a;
+    a = queue_action(OP_UPLOAD, "upload");
+    a->data = (void*) filename;
+    a->func = NULL;
 }
 
 void fb_queue_set(const char *var, const char *value, const char *prettyname)
@@ -338,6 +349,9 @@ void fb_execute_queue(usb_handle *usb)
         } else if (a->op == OP_COMMAND) {
             status = fb_command(usb, a->cmd);
             status = a->func(a, status, status ? fb_get_error() : "");
+            if (status) break;
+        } else if (a->op == OP_UPLOAD) {
+            status = fb_command_upload(usb, a->cmd, (char*) a->data);
             if (status) break;
         } else if (a->op == OP_QUERY) {
             status = fb_command_response(usb, a->cmd, resp);

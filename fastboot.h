@@ -34,6 +34,7 @@
 /* protocol.c - fastboot protocol */
 int fb_command(usb_handle *usb, const char *cmd);
 int fb_command_response(usb_handle *usb, const char *cmd, char *response);
+int fb_command_upload(usb_handle *usb, const char *cmd, char* outfile);
 int fb_download_data(usb_handle *usb, const void *data, unsigned size);
 char *fb_get_error(void);
 
@@ -43,10 +44,12 @@ char *fb_get_error(void);
 /* engine.c - high level command queue engine */
 void fb_queue_flash(const char *ptn, unsigned sz);
 void fb_queue_verify(const char *ptn, unsigned sz);
+void fb_queue_check(const char *ptn);
 void fb_queue_erase(const char *ptn);
 void fb_queue_require(const char *var, int invert, unsigned nvalues, const char **value);
 void fb_queue_display(const char *var, const char *prettyname);
 void fb_queue_display_partlist();
+void fb_queue_upload();
 void fb_queue_set(const char *var, const char *value, const char *prettyname);
 void fb_queue_reboot(void);
 void fb_queue_command(const char *cmd, const char *msg);

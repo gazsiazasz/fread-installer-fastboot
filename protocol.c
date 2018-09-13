@@ -29,6 +29,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include "fastboot.h"
@@ -40,22 +42,54 @@ char *fb_get_error(void)
     return ERROR;
 }
 
-static int check_response(usb_handle *usb, unsigned size, 
-                          unsigned data_okay, char *response)
+
+size_t write_to_file(const void *ptr, size_t size, int outfile) {
+  ssize_t written = 0;
+
+  while(written < size) {
+    written = write(outfile, ptr + written, size - written);
+    if(written < 0) {
+      return written;
+    }
+  }
+  return 0;
+}
+
+static int check_response(usb_handle *usb, long unsigned size, 
+                          unsigned data_okay, char *response, char* outfile)
 {
     unsigned char status[4096];
     int r;
     int is_disp = 0;
-    int progress = 0;
+    unsigned long progress = 0;
+    int outfilefd;
+    unsigned long expected_size = 0;
 
     for(;;) {
         r = usb_read(usb, status, 4095);
         if(r < 0) {
-            sprintf(ERROR, "status read failed (%s)", strerror(errno));
+            sprintf(ERROR, "status read failed (%s)\n", strerror(errno));
             usb_close(usb);
             return -1;
         }
         status[r] = 0;
+
+        if(expected_size > 0) {
+          if(write_to_file((void*) status, r, outfilefd)) {
+            sprintf(ERROR, "Writing to file failed: %s\n", strerror(errno));
+            close(outfilefd);
+            return -1;
+          }
+          expected_size -= r;
+          progress += r;
+
+          if(expected_size <= 0) {
+            close(outfilefd);
+            printf("Wrote %lu bytes to file: %s\n", progress, outfile);
+            return 0;
+          }
+          continue;
+        }
 
         if(is_disp) {
           strcpy(response + progress, (char*) status);
@@ -88,6 +122,9 @@ static int check_response(usb_handle *usb, unsigned size,
             if(response) {
                 strcpy(response, (char*) status + 4);
             }
+            if(outfile) {
+              close(outfilefd);
+            }
             return 0;
         }
 
@@ -110,17 +147,42 @@ static int check_response(usb_handle *usb, unsigned size,
             return dsize;
         }
 
+        if(!memcmp(status, "ATAD", 4)) {
+            outfilefd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
+            if(outfilefd < 0) {
+              sprintf(ERROR, "Opening file for writing failed: %s\n", strerror(errno));
+              usb_close(usb);
+              return -1;
+            }
+
+            expected_size = strtoul((char*) status + 4, 0, 16);
+
+            if(write_to_file((void*) status+37, r-37, outfilefd)) {
+              sprintf(ERROR, "Writing to file failed: %s\n", strerror(errno));
+              close(outfilefd);
+              usb_close(usb);
+              return -1;
+            }
+            expected_size -= r-37;
+            progress += r-37;
+            continue;
+        }
+
         strcpy(ERROR,"unknown status code");
         usb_close(usb);
         break;
     }
 
+    if(outfile) {
+      close(outfilefd);
+    }
+    
     return -1;
 }
 
 static int _command_send(usb_handle *usb, const char *cmd,
                          const void *data, unsigned size,
-                         char *response)
+                         char *response, char* outfile)
 {
     int cmdsize = strlen(cmd);
     int r;
@@ -141,10 +203,10 @@ static int _command_send(usb_handle *usb, const char *cmd,
     }
 
     if(data == 0) {
-        return check_response(usb, size, 0, response);
+      return check_response(usb, size, 0, response, outfile);
     }
 
-    r = check_response(usb, size, 1, 0);
+    r = check_response(usb, size, 1, 0, outfile);
     if(r < 0) {
         return -1;
     }
@@ -164,7 +226,7 @@ static int _command_send(usb_handle *usb, const char *cmd,
         }
     }
     
-    r = check_response(usb, 0, 0, 0);
+    r = check_response(usb, 0, 0, 0, outfile);
     if(r < 0) {
         return -1;
     } else {
@@ -172,14 +234,20 @@ static int _command_send(usb_handle *usb, const char *cmd,
     }
 }
 
+int fb_command_upload(usb_handle *usb, const char *cmd, char* outfile)
+{
+
+  return _command_send(usb, cmd, 0, 0, 0, outfile);
+}
+
 int fb_command(usb_handle *usb, const char *cmd)
 {
-    return _command_send(usb, cmd, 0, 0, 0);
+  return _command_send(usb, cmd, 0, 0, 0, 0);
 }
 
 int fb_command_response(usb_handle *usb, const char *cmd, char *response)
 {
-    return _command_send(usb, cmd, 0, 0, response);
+  return _command_send(usb, cmd, 0, 0, response, 0);
 }
 
 int fb_download_data(usb_handle *usb, const void *data, unsigned size)
@@ -188,7 +256,7 @@ int fb_download_data(usb_handle *usb, const void *data, unsigned size)
     int r;
     
     sprintf(cmd, "download:%08x", size);
-    r = _command_send(usb, cmd, data, size, 0);
+    r = _command_send(usb, cmd, data, size, 0, 0);
     
     if(r < 0) {
         return -1;

@@ -159,6 +159,7 @@ void usage(void)
             "  download <filename>                      download data to memory for use with \n"
             "                                             future commands\n"
             "  partlist                                 list partitions\n"
+            "  upload <filename>                        upload entire flash memory\n to filename"
             "  verify <partition> [ <filename> ]        verify downloaded data. required if \n"
             "                                             bootloader is secure\n"
             "  flash <partition> [ <filename> ]         flash downloaded data\n"
@@ -213,6 +214,7 @@ void usage(void)
     exit(1);
 }
 
+/*
 static char *strip(char *s)
 {
     int n;
@@ -226,6 +228,7 @@ static char *strip(char *s)
 }
 
 #define MAX_OPTIONS 32
+
 static int setup_requirement_line(char *name)
 {
     char *val[MAX_OPTIONS];
@@ -260,7 +263,7 @@ static int setup_requirement_line(char *name)
     name = strip(name);
     if (name == 0) return -1;
 
-        /* work around an unfortunate name mismatch */
+        // work around an unfortunate name mismatch 
     if (!strcmp(name,"board")) name = "product";
 
     out = malloc(sizeof(char*) * count);
@@ -274,7 +277,8 @@ static int setup_requirement_line(char *name)
     fb_queue_require(name, invert, n, out);
     return 0;
 }
-
+*/
+/*
 static void setup_requirements(char *data, unsigned sz)
 {
     char *s;
@@ -292,13 +296,12 @@ static void setup_requirements(char *data, unsigned sz)
         }
     }
 }
-
+*/
 #define skip(n) do { argc -= (n); argv += (n); } while (0)
 #define require(n) do { if (argc < (n)) usage(); } while (0)
 
 int do_oem_command(int argc, char **argv)
 {
-    int i;
     char command[256];
     if (argc <= 1) return 0;
     
@@ -320,7 +323,6 @@ int main(int argc, char **argv)
     int wants_reboot_bootloader = 0;
     void *data;
     unsigned sz;
-    unsigned page_size = 2048;
 
     skip(1);
     if (argc == 0) {
@@ -373,10 +375,19 @@ int main(int argc, char **argv)
         } else if(!strcmp(*argv, "partlist")) {
           fb_queue_display_partlist();
 	        skip(1);
+
+        } else if(!strcmp(*argv, "upload")) {
+          char *fname = 0;
+          require(2);
+          fname = argv[1];
+          skip(2);
+          if(fname == 0) die("You must specify a filename");
+          fb_queue_upload(fname);
+
         } else if(!strcmp(*argv, "verify")) {
             char *pname = argv[1];
             char *fname = 0;
-			data = 0;
+            data = 0;
             require(2);
             if (argc > 2) {
                 fname = argv[2];
@@ -393,14 +404,14 @@ int main(int argc, char **argv)
         } else if(!strcmp(*argv, "flash")) {
             char *pname = argv[1];
             char *fname = 0;
-			data = 0;
+            data = 0;
             require(2);
             if (argc > 2) {
                 fname = argv[2];
                 skip(3);
             } else {
                 skip(2);
-			}
+            }
             if (fname > 0) {
             	data = load_file(fname, &sz);
             	if (data == 0) die("cannot load '%s'\n", fname);
@@ -419,7 +430,6 @@ int main(int argc, char **argv)
             fb_queue_check(argv[1]);
             skip(2);
         } else if(!strcmp(*argv, "boot")) {
-            char *pname = argv[1];
             char *fname = 0;
 			data = 0;
             require(1);
