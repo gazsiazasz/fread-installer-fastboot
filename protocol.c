@@ -191,16 +191,18 @@ static int check_response(usb_handle *usb, long unsigned size,
             }
 
             expected_size = strtoul((char*) status + 4, NULL, 16);
-            //            len = MIN(r, expected_size);
             
-            if(write_to_file((void*) status+38, r-38, outfilefd)) {
+            // 4 for "ATAD" and 33 for 32-byte null-terminated size string
+            len = MIN(r - 4 - 33, expected_size);
+            
+            if(write_to_file((void*) status + 4 + 33, len, outfilefd)) {
               sprintf(ERROR, "Writing to file failed: %s\n", strerror(errno));
               close(outfilefd);
               usb_close(usb);
               return -1;
             }
-            expected_size -= r-38;
-            progress += r-38;
+            expected_size -= len;
+            progress += len;
             continue;
         }
 
