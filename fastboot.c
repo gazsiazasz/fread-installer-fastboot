@@ -150,7 +150,6 @@ void list_devices(void) {
 void usage(void)
 {
     fprintf(stderr,
-/*           1234567890123456789012345678901234567890123456789012345678901234567890123456 */
             "usage: fastboot [ <option> ] <command>\n"
             "\n"
             "commands:\n"
@@ -159,7 +158,8 @@ void usage(void)
             "  download <filename>                      download data to memory for use with \n"
             "                                             future commands\n"
             "  partlist                                 list partitions\n"
-            "  upload <filename>                        upload entire flash memory\n to filename"
+            "  upload <filename>                        upload entire flash memory\n"
+            "                                             to specified filename\n"
             "  verify <partition> [ <filename> ]        verify downloaded data. required if \n"
             "                                             bootloader is secure\n"
             "  flash <partition> [ <filename> ]         flash downloaded data\n"

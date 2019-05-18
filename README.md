@@ -18,7 +18,7 @@ This is intended to be used with the [fread.ink u-boot fastboot server](https://
 
 # Attribution
 
-This special version of the fastboot client was created by [yifanlu](https://github.com/yifanlu) based on the official fastboot client. The original repository by yifanlu is [here](https://github.com/yifanlu/Fastboot-Kindle). The only changes in this fork is to the `Makefile`, to this readme and the addition of a COPYING file with the license.
+This special version of the fastboot client was created by [yifanlu](https://github.com/yifanlu) based on the official fastboot client. The original repository by yifanlu is [here](https://github.com/yifanlu/Fastboot-Kindle). This fork adds features related to flashing and backup.
 
 # Disclaimer
 

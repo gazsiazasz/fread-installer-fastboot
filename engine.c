@@ -343,17 +343,21 @@ void fb_execute_queue(usb_handle *usb)
             fprintf(stderr,"%s...\n",a->msg);
         }
         if (a->op == OP_DOWNLOAD) {
+            printf("Sending download command\n");
             status = fb_download_data(usb, a->data, a->size);
             status = a->func(a, status, status ? fb_get_error() : "");
             if (status) break;
         } else if (a->op == OP_COMMAND) {
+            printf("Sending command: %.64s\n", a->cmd);
             status = fb_command(usb, a->cmd);
             status = a->func(a, status, status ? fb_get_error() : "");
             if (status) break;
         } else if (a->op == OP_UPLOAD) {
+            printf("Sending upload command\n");
             status = fb_command_upload(usb, a->cmd, (char*) a->data);
             if (status) break;
         } else if (a->op == OP_QUERY) {
+            printf("Sending query command\n");
             status = fb_command_response(usb, a->cmd, resp);
             status = a->func(a, status, status ? fb_get_error() : resp);
             if (status) break;

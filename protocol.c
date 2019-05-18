@@ -32,6 +32,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <linux/limits.h>
+#include <sys/param.h>
 
 #include "fastboot.h"
 
@@ -60,12 +62,16 @@ static int check_response(usb_handle *usb, long unsigned size,
 {
     unsigned char status[4096];
     int r;
+    int len;
     int is_disp = 0;
     unsigned long progress = 0;
     int outfilefd;
     unsigned long expected_size = 0;
+    unsigned long expected_crc32 = 0;
+    char outfile_crc32[PATH_MAX+1];
 
     for(;;) {
+        len = 0;
         r = usb_read(usb, status, 4095);
         if(r < 0) {
             sprintf(ERROR, "status read failed (%s)\n", strerror(errno));
@@ -74,21 +80,50 @@ static int check_response(usb_handle *usb, long unsigned size,
         }
         status[r] = 0;
 
+        printf("Received %d bytes from device\n", r);
+        
         if(expected_size > 0) {
-          if(write_to_file((void*) status, r, outfilefd)) {
+          len = MIN(r, expected_size);
+          if(write_to_file((void*) status, len, outfilefd)) {
             sprintf(ERROR, "Writing to file failed: %s\n", strerror(errno));
             close(outfilefd);
             return -1;
           }
-          expected_size -= r;
-          progress += r;
+          expected_size -= len;
+          progress += len;
+
+          printf("Progress: %lu of %lu received and written to disk\n", progress,expected_size);
 
           if(expected_size <= 0) {
             close(outfilefd);
-            printf("Wrote %lu bytes to file: %s\n", progress, outfile);
-            return 0;
+            printf("Upload completed with %lu bytes written to file: %s\n", progress, outfile);
+
+            expected_crc32 = 4;
+            len = strnlen(outfile, PATH_MAX-6);
+            strncpy(outfile_crc32, outfile, len);
+            memcpy(outfile_crc32 + len, ".crc32\0", len + 7);
+
+            printf("Waiting for CRC32\n");
+            
+            outfilefd = open(outfile_crc32, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
+            if(outfilefd < 0) {
+              sprintf(ERROR, "Opening crc32 file for writing failed: %s\n", strerror(errno));
+              usb_close(usb);
+              return -1;
+            }
+            continue;
           }
           continue;
+        }
+
+        if(expected_crc32 > 0) {
+          if(write_to_file((void*) status + len, 4, outfilefd)) {
+            sprintf(ERROR, "Writing to crc32 file failed: %s\n", strerror(errno));
+            close(outfilefd);
+            return -1;
+          }
+          close(outfilefd);
+          return 0;
         }
 
         if(is_disp) {
@@ -155,8 +190,9 @@ static int check_response(usb_handle *usb, long unsigned size,
               return -1;
             }
 
-            expected_size = strtoul((char*) status + 4, 0, 16);
-
+            expected_size = strtoul((char*) status + 4, NULL, 16);
+            //            len = MIN(r, expected_size);
+            
             if(write_to_file((void*) status+38, r-38, outfilefd)) {
               sprintf(ERROR, "Writing to file failed: %s\n", strerror(errno));
               close(outfilefd);
@@ -225,7 +261,8 @@ static int _command_send(usb_handle *usb, const char *cmd,
             return -1;
         }
     }
-    
+
+    printf("Waiting for response\n");
     r = check_response(usb, 0, 0, 0, outfile);
     if(r < 0) {
         return -1;
