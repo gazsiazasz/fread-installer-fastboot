@@ -372,10 +372,6 @@ int main(int argc, char **argv)
             if (data == 0) die("cannot load '%s'\n", fname);
             fb_queue_download("data", data, sz);
 
-        } else if(!strcmp(*argv, "partlist")) {
-          fb_queue_display_partlist();
-	        skip(1);
-
         } else if(!strcmp(*argv, "upload")) {
           char *fname = 0;
           require(2);
