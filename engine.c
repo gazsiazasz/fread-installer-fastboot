@@ -140,12 +140,12 @@ void fb_queue_check(const char *ptn)
     a->msg = mkmsg("checking '%s'", ptn);
 }
 
-void fb_queue_flash(const char *ptn, unsigned sz)
+void fb_queue_flash(const char *address, unsigned sz)
 {
     Action *a;
 
-    a = queue_action(OP_COMMAND, "flash:%s", ptn);
-    a->msg = mkmsg("writing '%s'", ptn);
+    a = queue_action(OP_COMMAND, "flash:%s", address);
+    a->msg = mkmsg("writing to '%s'", address);
 }
 
 void fb_queue_verify(const char *ptn, unsigned sz)
@@ -311,12 +311,12 @@ void fb_queue_command(const char *cmd, const char *msg)
     a->msg = msg;
 }
 
-void fb_queue_download(const char *name, void *data, unsigned size)
+void fb_queue_download(const char *address, void *data, unsigned size)
 {
     Action *a = queue_action(OP_DOWNLOAD, "");
     a->data = data;
     a->size = size;
-    a->msg = mkmsg("downloading '%s'", name);
+    a->msg = mkmsg("downloading '%s'", address);
 }
 
 void fb_queue_notice(const char *notice)

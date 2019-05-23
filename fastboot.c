@@ -57,13 +57,10 @@ void die(const char *fmt, ...)
 
 void get_my_path(char *path);
 
-#ifdef _WIN32
-void *load_file(const char *fn, unsigned *_sz);
-#else
-void *load_file(const char *fn, unsigned *_sz)
+void *load_file_seek(const char *fn, long int seek, size_t *_sz)
 {
     char *data;
-    int sz;
+    size_t sz;
     int fd;
 
     data = 0;
@@ -73,10 +70,14 @@ void *load_file(const char *fn, unsigned *_sz)
     sz = lseek(fd, 0, SEEK_END);
     if(sz < 0) goto oops;
 
-    if(lseek(fd, 0, SEEK_SET) != 0) goto oops;
+    if(lseek(fd, seek, SEEK_SET) != seek) goto oops;
 
+    sz -= seek;
+    
     data = (char*) malloc(sz);
-    if(data == 0) goto oops;
+    if(data == 0) {
+      die("Failed to allocate %ul bytes on local system", sz);
+    }
 
     if(read(fd, data, sz) != sz) goto oops;
     close(fd);
@@ -88,6 +89,15 @@ oops:
     close(fd);
     if(data != 0) free(data);
     return 0;
+}
+
+#ifdef _WIN32
+void *load_file(const char *fn, unsigned *_sz);
+#else
+void *load_file(const char *fn, size_t *_sz)
+{
+  load_file_seek(fn, 0, _sz);
+  return 0;
 }
 #endif
 
@@ -155,14 +165,15 @@ void usage(void)
             "commands:\n"
             "  getvar <variable>                        display a bootloader or idme variable\n"
             "  setvar <variable> <value>                sets an idme variable\n"
-            "  download <filename>                      download data to memory for use with \n"
-            "                                             future commands\n"
+            "  download <filename> [ <offset> ]         download data to memory for use with \n"
+            "                                             future commands. Specify <offset> (hex)\n"
+            "                                             to skip the first n bytes of the file \n"
             "  partlist                                 list partitions\n"
             "  upload <filename>                        upload entire flash memory\n"
             "                                             to specified filename\n"
             "  verify <partition> [ <filename> ]        verify downloaded data. required if \n"
             "                                             bootloader is secure\n"
-            "  flash <partition> [ <filename> ]         flash downloaded data\n"
+            "  flash <address> [ <filename> ]           flash downloaded data to address (hex)\n"
             "  eraseall                                 wipe the entire flash memory\n"
             "  erase <partition>                        erase a flash partition\n"
             "  check <partition>                        crc32 hash test the flash memory\n"
@@ -322,7 +333,7 @@ int main(int argc, char **argv)
     int wants_reboot = 0;
     int wants_reboot_bootloader = 0;
     void *data;
-    unsigned sz;
+    size_t sz;
 
     skip(1);
     if (argc == 0) {
@@ -362,13 +373,35 @@ int main(int argc, char **argv)
 	        skip(3);
         } else if(!strcmp(*argv, "download")) {
             char *fname = 0;
+            char *offset_str = 0;
+            long int offset = 0;
+            char* tmp_ptr;
             require(2);
-            if (argc > 1) {
-                fname = argv[1];
-                skip(2);
+            if (argc <= 1) {
+              die("You must specify a filename");
+            } else if (argc == 2) {
+              fname = argv[1];
+              skip(2);
+            } else {
+#ifdef _WIN32
+              die("download offset not supported on windows");
+#endif
+              fname = argv[1];
+              offset_str = argv[2];
+              offset = strtol(offset_str, &tmp_ptr, 16);
+              // check if the string contained a valid number
+              if(!(*offset_str != '\0' && *tmp_ptr == '\0')) {
+                die("Invalid address. Format is hex, e.g: 0x800");
+              }
+              skip(3);                
             }
-            if (fname == 0) die("cannot determine image filename");
-            data = load_file(fname, &sz);
+
+            if(offset == 0) {
+              data = load_file(fname, &sz);
+            } else {
+              data = load_file_seek(fname, offset, &sz);
+            }
+            
             if (data == 0) die("cannot load '%s'\n", fname);
             fb_queue_download("data", data, sz);
 
@@ -398,7 +431,7 @@ int main(int argc, char **argv)
 			}
             fb_queue_verify(pname, sz);
         } else if(!strcmp(*argv, "flash")) {
-            char *pname = argv[1];
+            char *address = argv[1];
             char *fname = 0;
             data = 0;
             require(2);
@@ -411,9 +444,9 @@ int main(int argc, char **argv)
             if (fname > 0) {
             	data = load_file(fname, &sz);
             	if (data == 0) die("cannot load '%s'\n", fname);
-	            fb_queue_download(pname, data, sz);
+	            fb_queue_download(address, data, sz);
 			}
-            fb_queue_flash(pname, sz);
+            fb_queue_flash(address, sz);
 		} else if(!strcmp(*argv, "eraseall")) {	
             fb_queue_command("eraseall", "wiping the flash memory");
 	        skip(1);
