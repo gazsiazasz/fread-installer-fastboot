@@ -34,7 +34,7 @@
 /* protocol.c - fastboot protocol */
 int fb_command(usb_handle *usb, const char *cmd);
 int fb_command_response(usb_handle *usb, const char *cmd, char *response);
-int fb_command_upload(usb_handle *usb, const char *cmd, char* outfile);
+int fb_command_upload(usb_handle *usb, int partnum, char* outfile);
 int fb_download_data(usb_handle *usb, const void *data, unsigned size);
 char *fb_get_error(void);
 

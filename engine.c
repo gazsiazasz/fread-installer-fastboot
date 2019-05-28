@@ -72,6 +72,7 @@ struct Action
     char cmd[64];    
     void *data;
     unsigned size;
+    int partnum;
 
     const char *msg;
     int (*func)(Action *a, int status, char *resp);
@@ -270,11 +271,12 @@ void fb_queue_display_partlist()
 }
 
 
-void fb_queue_upload(char* filename)
+void fb_queue_upload(char* filename, int partnum)
 {
     Action *a;
     a = queue_action(OP_UPLOAD, "upload");
     a->data = (void*) filename;
+    a->partnum = partnum;
     a->func = NULL;
 }
 
@@ -354,7 +356,7 @@ void fb_execute_queue(usb_handle *usb)
             if (status) break;
         } else if (a->op == OP_UPLOAD) {
             printf("Sending upload command\n");
-            status = fb_command_upload(usb, a->cmd, (char*) a->data);
+            status = fb_command_upload(usb, a->partnum, (char*) a->data);
             if (status) break;
         } else if (a->op == OP_QUERY) {
             printf("Sending query command\n");

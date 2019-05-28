@@ -169,7 +169,7 @@ void usage(void)
             "                                             future commands. Specify <offset> (hex)\n"
             "                                             to skip the first n bytes of the file \n"
             "  partlist                                 list partitions\n"
-            "  upload <filename>                        upload entire flash memory\n"
+            "  upload <partnum> <filename>              upload entire flash memory\n"
             "                                             to specified filename\n"
             "  verify <partition> [ <filename> ]        verify downloaded data. required if \n"
             "                                             bootloader is secure\n"
@@ -407,11 +407,17 @@ int main(int argc, char **argv)
 
         } else if(!strcmp(*argv, "upload")) {
           char *fname = 0;
-          require(2);
+          int partnum = 0;
+          
+          require(3);
           fname = argv[1];
-          skip(2);
+          partnum = atoi(argv[2]);
+          skip(3);
           if(fname == 0) die("You must specify a filename");
-          fb_queue_upload(fname);
+          if(partnum < 0 || partnum > 2) {
+            die("Partition number must be between 0 and 2");
+          }
+          fb_queue_upload(fname, partnum);
 
         } else if(!strcmp(*argv, "verify")) {
             char *pname = argv[1];
