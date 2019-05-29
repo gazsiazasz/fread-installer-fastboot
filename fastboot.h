@@ -42,7 +42,7 @@ char *fb_get_error(void);
 #define FB_RESPONSE_SZ 4095
 
 /* engine.c - high level command queue engine */
-void fb_queue_flash(const char *ptn, unsigned sz);
+void fb_queue_flash(unsigned long address, unsigned sz);
 void fb_queue_verify(const char *ptn, unsigned sz);
 void fb_queue_check(const char *ptn);
 void fb_queue_erase(const char *ptn);

@@ -437,21 +437,14 @@ int main(int argc, char **argv)
 			}
             fb_queue_verify(pname, sz);
         } else if(!strcmp(*argv, "flash")) {
-            char *address = argv[1];
+            unsigned long address;
             char *fname = 0;
             data = 0;
             require(2);
-            if (argc > 2) {
-                fname = argv[2];
-                skip(3);
-            } else {
-                skip(2);
-            }
-            if (fname > 0) {
-            	data = load_file(fname, &sz);
-            	if (data == 0) die("cannot load '%s'\n", fname);
-	            fb_queue_download(address, data, sz);
-			}
+            address = strtoul(argv[1], NULL, 16);
+            // TODO add check to ensure we don't flash over RAM type info
+            skip(2);
+            
             fb_queue_flash(address, sz);
 		} else if(!strcmp(*argv, "eraseall")) {	
             fb_queue_command("eraseall", "wiping the flash memory");

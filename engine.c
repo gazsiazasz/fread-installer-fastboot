@@ -141,11 +141,11 @@ void fb_queue_check(const char *ptn)
     a->msg = mkmsg("checking '%s'", ptn);
 }
 
-void fb_queue_flash(const char *address, unsigned sz)
+void fb_queue_flash(unsigned long address, unsigned sz)
 {
     Action *a;
 
-    a = queue_action(OP_COMMAND, "flash:%s", address);
+    a = queue_action(OP_COMMAND, "flash:%08x", address);
     a->msg = mkmsg("writing to '%s'", address);
 }
 

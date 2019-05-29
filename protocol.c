@@ -277,7 +277,7 @@ int fb_command_upload(usb_handle *usb, int partnum, char* outfile)
 {
     char cmd[64];
     
-    sprintf(cmd, "upload:%1d", partnum);
+    sprintf(cmd, "upload:%1dx", partnum);
   
   return _command_send(usb, cmd, 0, 0, 0, outfile);
 }
