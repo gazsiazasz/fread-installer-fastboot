@@ -410,8 +410,8 @@ int main(int argc, char **argv)
           int partnum = 0;
           
           require(3);
-          fname = argv[1];
-          partnum = atoi(argv[2]);
+          partnum = atoi(argv[1]);
+          fname = argv[2];
           skip(3);
           if(fname == 0) die("You must specify a filename");
           if(partnum < 0 || partnum > 2) {
